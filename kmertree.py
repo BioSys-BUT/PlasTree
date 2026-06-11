@@ -33,19 +33,19 @@ def kmer_tree(sequences):
         kmers = [''.join(p) for p in product(nucleotides, repeat=k)]
         return kmers
 
-    def count_kmers(k, seq, kmers_set):
+    def count_kmers(k, seq, kmers):
         """
         Count k-mer occurrences in a sequence and rank them by frequency.
 
         Args:
             k (int): Length of the k-mers.
             seq (str): Nucleotide sequence.
-            kmers_set (set): Set of all valid k-mers.
+            kmers (list): Ordered list of all valid k-mers.
 
         Returns:
             list: Normalized rank values for each k-mer in original order.
         """
-        kmer_counts = {kmer: 0 for kmer in kmers_set}
+        kmer_counts = {kmer: 0 for kmer in kmers}
         seq_len = len(seq)
         for i in range(seq_len - k + 1):
             kmer = seq[i: i + k]
@@ -65,30 +65,27 @@ def kmer_tree(sequences):
                 ranks[kmer] = current_rank - 1
             previous_count = count
 
-        num_kmers = len(kmers_set)
+        num_kmers = len(kmers)
         normalized_ranks = {kmer: rank / num_kmers for kmer, rank in ranks.items()}
-        output_ranks = [normalized_ranks[kmer] for kmer in kmers_set]
+        output_ranks = [normalized_ranks[kmer] for kmer in kmers]
         return output_ranks
 
-    def compute_all_kmer_ranks(sequences, k, rev):
+    def compute_all_kmer_ranks(sequences, k):
         """
         Compute normalized k-mer frequency ranks for all sequences.
 
         Args:
             sequences (list): List of Bio.SeqRecord objects.
             k (int): Length of k-mers.
-            rev (int): Unused parameter (placeholder).
-
         Returns:
             dict: Mapping from sequence ID to rank vector.
         """
         kmers = generate_kmers(k)
-        kmers_set = set(kmers)
         kmer_ranks = {}
         total = len(sequences)
         step = max(1, math.ceil(total / 20)) if total else 1
         for idx, seq in enumerate(sequences, start=1):
-            kmer_ranks[seq.id] = count_kmers(k, str(seq.seq) + str(seq.seq.reverse_complement()), kmers_set)
+            kmer_ranks[seq.id] = count_kmers(k, str(seq.seq) + str(seq.seq.reverse_complement()), kmers)
             if idx % step == 0 or idx == total:
                 print(f"K-mer ranks (k={k}): {idx}/{total} sequences", flush=True)
         return kmer_ranks
@@ -119,7 +116,7 @@ def kmer_tree(sequences):
         """
         names = [s.id for s in sequences]
         matrix = DistanceMatrix(names)
-        kmer_ranks = compute_all_kmer_ranks(sequences, k, 0)
+        kmer_ranks = compute_all_kmer_ranks(sequences, k)
         total_pairs = len(names) * (len(names) - 1) // 2
         done_pairs = 0
         step = max(1, math.ceil(total_pairs / 100)) if total_pairs else 1

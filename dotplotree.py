@@ -9,9 +9,113 @@ import numpy as np
 import math
 import os
 import matplotlib.pyplot as plt
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
-def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
+def _replace_with_mask(sequence, mask, replacement_char='N'):
+    return Seq(''.join(replacement_char if mask_bit == '0' else char for char, mask_bit in zip(sequence, mask)))
+
+
+def _find_long_segments(points, window, gap):
+    segments = []
+    if not points:
+        return segments
+
+    current_segment = [points[0]]
+    half_window = (window - 1) / 2
+
+    for i in range(1, len(points)):
+        distance_x = abs(points[i][0] - current_segment[-1][0])
+        distance_y = abs(points[i][1] - current_segment[-1][1])
+
+        if distance_x <= half_window and distance_y <= half_window and distance_x == distance_y:
+            current_segment.append(points[i])
+        else:
+            if len(current_segment) >= window:
+                segments.append(current_segment)
+            current_segment = [points[i]]
+
+    if len(current_segment) >= window:
+        segments.append(current_segment)
+
+    final_segments = []
+    current_final_segment = []
+
+    for segment in segments:
+        if not current_final_segment:
+            current_final_segment = segment
+        else:
+            distance_x = abs(current_final_segment[-1][0] - segment[0][0])
+            distance_y = abs(current_final_segment[-1][1] - segment[0][1])
+
+            if distance_x <= gap and distance_y <= gap and abs(distance_x - distance_y) <= round(window / 2):
+                current_final_segment.extend(segment[1:])
+            else:
+                if len(current_final_segment) >= 2 * window:
+                    final_segments.append(current_final_segment)
+                current_final_segment = segment
+
+    if current_final_segment and len(current_final_segment) >= 2 * window:
+        final_segments.append(current_final_segment)
+
+    return final_segments
+
+
+def _dot_mat_distance_core(seq1_str, seq2_str, window, gap):
+    if window == 21:
+        mask = '1110101100110010101111'
+    else:
+        mask = '1110100110010101111'
+
+    seq1 = seq1_str.upper()
+    seq2 = seq2_str.upper()
+    seq2rc = str(Seq(seq2).reverse_complement())
+    dict_one, dict_two, dict_two2 = {}, {}, {}
+
+    for seq, section_dict in [(seq1, dict_one), (seq2, dict_two), (seq2rc, dict_two2)]:
+        for i in range(len(seq) - window + 1):
+            section = _replace_with_mask(seq[i: i + window], mask)
+            section_dict.setdefault(section, []).append(i)
+
+    def get_match_coordinates(matches, one, two):
+        x, y = [], []
+        for section in matches:
+            for i in one[section]:
+                for j in two[section]:
+                    x.append(i)
+                    y.append(j)
+        return x, y
+
+    matches = set(dict_one).intersection(dict_two)
+    matches2 = set(dict_one).intersection(dict_two2)
+    x, y = get_match_coordinates(matches, dict_one, dict_two)
+    x2, y2 = get_match_coordinates(matches2, dict_one, dict_two2)
+
+    segments_direct = _find_long_segments(sorted(zip(x, y)), window, gap)
+    segments_reverse = _find_long_segments(sorted(zip(x2, y2)), window, gap)
+
+    bin_dir1 = np.zeros(len(seq1), dtype=int)
+    bin_dir2 = np.zeros(len(seq2), dtype=int)
+    bin_rev1 = np.zeros(len(seq1), dtype=int)
+    bin_rev2 = np.zeros(len(seq2), dtype=int)
+
+    for segment in segments_direct:
+        bin_dir1[segment[0][0]:segment[-1][0] + window] = 1
+        bin_dir2[segment[0][1]:segment[-1][1] + window] = 1
+
+    for segment in segments_reverse:
+        bin_rev1[segment[0][0]:segment[-1][0] + window] = 1
+        bin_rev2[segment[0][1]:segment[-1][1] + window] = 1
+
+    bin_rrev2 = bin_rev2[::-1]
+    merged_bin1 = np.logical_or(bin_dir1, bin_rev1).astype(int)
+    merged_bin2 = np.logical_or(bin_dir2, bin_rrev2).astype(int)
+
+    bin_match = np.sum(merged_bin1) + np.sum(merged_bin2)
+    return 1 - (bin_match / (len(seq1) + len(seq2)))
+
+
+def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, workers=1):
     """
     Construct a UPGMA tree based on dotplot-derived similarity between sequences.
 
@@ -19,6 +123,7 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
         sequences (list of SeqRecord): Input sequences.
         window (int): Size of the sliding window for dotplot comparison.
         dotplot_view (bool): Whether to render dotplots for each pair.
+        workers (int): Number of worker processes for pairwise distance calculation.
 
     Returns:
         tuple: (Phylogenetic tree, Distance matrix)
@@ -44,75 +149,6 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
                 return candidate
             i += 1
             
-    def replace_with_mask(sequence, mask, replacement_char='N'):
-        """
-        Efficiently replace characters in a sequence based on a mask.
-
-        Args:
-            sequence (str): Input sequence.
-            mask (str): Mask specifying which characters to replace.
-            replacement_char (str, optional): Character to replace with. Default is 'N'.
-
-        Returns:
-            Bio.Seq.Seq: Sequence with replaced characters.
-        """
-        return Seq(''.join(replacement_char if mask_bit == '0' else char for char, mask_bit in zip(sequence, mask)))
-
-    def find_long_segments(points, window, gap):
-        """
-        Find contiguous segments in dotplot with minimum length and allowed gap.
-
-        Args:
-            points (list of tuples): Matched coordinates in dotplot.
-            window (int): Minimum segment length.
-            gap (int): Maximum allowed gap between segments to merge.
-
-        Returns:
-            list: Merged long segments.
-        """
-        segments = []
-        if not points:
-            return segments
-
-        current_segment = [points[0]]
-        half_window = (window - 1) / 2
-
-        for i in range(1, len(points)):
-            distance_x = abs(points[i][0] - current_segment[-1][0])
-            distance_y = abs(points[i][1] - current_segment[-1][1])
-
-            if distance_x <= half_window and distance_y <= half_window and distance_x == distance_y:
-                current_segment.append(points[i])
-            else:
-                if len(current_segment) >= window:
-                    segments.append(current_segment)
-                current_segment = [points[i]]
-
-        if len(current_segment) >= window:
-            segments.append(current_segment)
-
-        final_segments = []
-        current_final_segment = []
-
-        for segment in segments:
-            if not current_final_segment:
-                current_final_segment = segment
-            else:
-                distance_x = abs(current_final_segment[-1][0] - segment[0][0])
-                distance_y = abs(current_final_segment[-1][1] - segment[0][1])
-
-                if distance_x <= gap and distance_y <= gap and abs(distance_x - distance_y) <= round(window / 2):
-                    current_final_segment.extend(segment[1:])
-                else:
-                    if len(current_final_segment) >= 2 * window:
-                        final_segments.append(current_final_segment)
-                    current_final_segment = segment
-
-        if current_final_segment and len(current_final_segment) >= 2 * window:
-            final_segments.append(current_final_segment)
-
-        return final_segments
-
     def dotplotxy_segments(x, y, x2, y2, segments, segments2, window, mask):
         """
         Visualize the dotplot and matching segments.
@@ -171,7 +207,7 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
                                   (seq2.seq.upper(), dict_two),
                                   (seq2rc, dict_two2)]:
             for i in range(len(seq) - window + 1):
-                section = replace_with_mask(seq[i: i + window], mask)
+                section = _replace_with_mask(seq[i: i + window], mask)
                 section_dict.setdefault(section, []).append(i)
 
         def get_match_coordinates(matches, dict_one, dict_two):
@@ -188,8 +224,8 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
         x, y = get_match_coordinates(matches, dict_one, dict_two)
         x2, y2 = get_match_coordinates(matches2, dict_one, dict_two2)
 
-        segments_direct = find_long_segments(sorted(zip(x, y)), window, gap)
-        segments_reverse = find_long_segments(sorted(zip(x2, y2)), window, gap)
+        segments_direct = _find_long_segments(sorted(zip(x, y)), window, gap)
+        segments_reverse = _find_long_segments(sorted(zip(x2, y2)), window, gap)
 
         if dotplot:
             dotplotxy_segments(x, y, x2, y2, segments_direct, segments_reverse, window, mask)
@@ -223,20 +259,43 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
     done_pairs = 0
     progress_step = max(1, math.ceil(total_pairs / 100)) if total_pairs else 1
 
+    if workers < 1:
+        raise ValueError("workers must be >= 1")
+
     if dotplot_view and len(sequences) > 20:
         dotplot_view = False
         print("Too many sequences. Dot plot rendering has been disabled. Maximum 20 sequences.")
 
+    if workers > 1 and dotplot_view:
+        dotplot_view = False
+        print("Dot plot rendering has been disabled for parallel execution (workers > 1).")
+
     if total_pairs:
         print(f"Dotplot progress: 0/{total_pairs} pairs", flush=True)
 
-    for i, rec_one in enumerate(sequences):
-        for j in range(i + 1, len(sequences)):
-            rec_two = sequences[j]
-            dist_mat[i, j] = dot_mat_distance(rec_one, rec_two, window, gap, dotplot_view)
-            done_pairs += 1
-            if done_pairs % progress_step == 0 or done_pairs == total_pairs:
-                print(f"Dotplot progress: {done_pairs}/{total_pairs} pairs", flush=True)
+    if workers == 1:
+        for i, rec_one in enumerate(sequences):
+            for j in range(i + 1, len(sequences)):
+                rec_two = sequences[j]
+                dist_mat[i, j] = dot_mat_distance(rec_one, rec_two, window, gap, dotplot_view)
+                done_pairs += 1
+                if done_pairs % progress_step == 0 or done_pairs == total_pairs:
+                    print(f"Dotplot progress: {done_pairs}/{total_pairs} pairs", flush=True)
+    else:
+        future_to_pair = {}
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            for i, rec_one in enumerate(sequences):
+                for j in range(i + 1, len(sequences)):
+                    rec_two = sequences[j]
+                    future = executor.submit(_dot_mat_distance_core, str(rec_one.seq), str(rec_two.seq), window, gap)
+                    future_to_pair[future] = (i, j)
+
+            for future in as_completed(future_to_pair):
+                i, j = future_to_pair[future]
+                dist_mat[i, j] = future.result()
+                done_pairs += 1
+                if done_pairs % progress_step == 0 or done_pairs == total_pairs:
+                    print(f"Dotplot progress: {done_pairs}/{total_pairs} pairs", flush=True)
 
     constructor = DistanceTreeConstructor()
     tree = constructor.upgma(dist_mat)

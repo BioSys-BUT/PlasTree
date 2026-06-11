@@ -7,7 +7,7 @@ from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
 from scipy.spatial.distance import hamming
 import math
 
-def pang_tree(input_file):
+def pang_tree(input_file, expected_samples=None):
     """
     Construct a UPGMA tree from Roary pangenome presence/absence matrix.
 
@@ -17,6 +17,9 @@ def pang_tree(input_file):
 
     Args:
         input_file (str): Path to Roary 'gene_presence_absence.csv'.
+        expected_samples (list[str] | None): Optional ordered list of sample names
+            expected in output (typically FASTA IDs). Missing samples are added
+            as all-zero columns.
 
     Returns:
         tuple: (Bio.Phylo.BaseTree.Tree, DistanceMatrix)
@@ -38,8 +41,26 @@ def pang_tree(input_file):
     df = csv_file.iloc[:, presence_start_idx:]
 
     # Convert all non-empty cells (presence) to 1, and missing values (absence) to 0
-    df.fillna(0, inplace=True)
-    df = df.applymap(lambda x: 1 if isinstance(x, str) else x)
+    df = df.notna().astype(int)
+
+    if expected_samples is not None:
+        # Map Roary columns like "sample_bakta" back to FASTA IDs when possible.
+        renamed_columns = {}
+        for col in df.columns:
+            if col.endswith("_bakta"):
+                base = col[:-6]
+                if base in expected_samples:
+                    renamed_columns[col] = base
+        if renamed_columns:
+            df = df.rename(columns=renamed_columns)
+
+        # Add missing expected samples as all-zero presence/absence columns.
+        missing_samples = [name for name in expected_samples if name not in df.columns]
+        for name in missing_samples:
+            df[name] = 0
+
+        # Keep only expected samples and in FASTA order for cross-method consistency.
+        df = df[[name for name in expected_samples]]
 
     # Extract sample names
     names = df.columns.tolist()

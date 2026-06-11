@@ -182,7 +182,7 @@ def main():
     if "pang" in args.methods:
         if args.pang_csv:
             print("Running pangenome binary method...")
-            pang_tree_result, pang_dist = pang_tree(args.pang_csv)
+            pang_tree_result, pang_dist = pang_tree(args.pang_csv, expected_samples=[s.id for s in sequences])
             trees.append(pang_tree_result)
             if 'dotmat_tree' in locals() and dotmat_tree is not None:
                 trees.append(dotmat_tree)

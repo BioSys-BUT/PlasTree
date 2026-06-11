@@ -7,6 +7,8 @@ from Bio.Phylo.TreeConstruction import DistanceMatrix
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
 import numpy as np
 import math
+import os
+import matplotlib.pyplot as plt
 
 
 def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
@@ -22,7 +24,6 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
         tuple: (Phylogenetic tree, Distance matrix)
     """
     def get_unique_filename(base_name, ext, max_digits=3):
-        import os
         """
         Generate a unique filename by appending a numeric suffix if file exists.
 
@@ -122,10 +123,6 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
             window (int): Window size.
             mask (str): Binary mask used for filtering.
         """
-        import matplotlib.pyplot as plt
-        import numpy as np
-        import os
-
         plt.scatter(x, y, color='black', marker='.', linewidths=0.05)
         plt.scatter(x2, len(rec_two)-np.array(y2), color='gray', marker='.', linewidths=0.05)
 
@@ -173,7 +170,7 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None):
         for seq, section_dict in [(seq1.seq.upper(), dict_one),
                                   (seq2.seq.upper(), dict_two),
                                   (seq2rc, dict_two2)]:
-            for i in range(len(seq) - window):
+            for i in range(len(seq) - window + 1):
                 section = replace_with_mask(seq[i: i + window], mask)
                 section_dict.setdefault(section, []).append(i)
 

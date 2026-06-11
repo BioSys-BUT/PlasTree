@@ -129,10 +129,13 @@ def main():
     parser.add_argument("--methods", nargs="*", choices=["dotplot", "pang", "kmer"], default=["dotplot"], help="Tree construction methods to apply. Default: dotplot only.")
     parser.add_argument("--outdir", default="output", help="Directory to store output files. Default: /output.")
     parser.add_argument("--max_cluster_size", type=int, default=None, help="Maximum OTUs per cluster in consensus tree. Default: 1/2 number of sequences.")
-    parser.add_argument("--dotplot_window", type=int, default=21, help="Size of the sliding window for dotplot comparison (e.g., 19 or 21).")
+    parser.add_argument("--dotplot_window", type=int, default=21, help="Size of the sliding window for dotplot comparison. Supported values: 19 or 21. Default: 21.")
     parser.add_argument("--dotplot_png", action='store_true', help="Save dotplots for all pairwise comparisons as PNGs. Only for ≤20 sequences. Default: off.")
     parser.add_argument("--result_tree_png", action='store_true', help="Save consensus/result tree as PNG with node support and cluster coloring. Default: off.")
     args = parser.parse_args()
+
+    if args.dotplot_window not in (19, 21):
+        parser.error("Unsupported value for --dotplot_window. Use 19 or 21.")
 
     os.makedirs(args.outdir, exist_ok=True)
     sequences = get_sequences(args.fasta)

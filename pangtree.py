@@ -1,6 +1,6 @@
 # pangtree.py
 # Tree construction based on binary pangenome presence/absence matrix
-# Input is a CSV file in Roary output format (gene_presence_absence.csv)
+# Input is a CSV file in Roary or Panaroo output format
 
 import pandas as pd
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
@@ -9,14 +9,15 @@ import math
 
 def pang_tree(input_file, expected_samples=None):
     """
-    Construct a UPGMA tree from Roary pangenome presence/absence matrix.
+    Construct a UPGMA tree from pangenome presence/absence matrix.
 
-    This function reads the `gene_presence_absence.csv` file produced by Roary,
+    This function reads a pangenome CSV file (Roary or Panaroo format),
     extracts the binary matrix of gene presence across samples, calculates pairwise
     Hamming distances between samples, and builds a UPGMA phylogenetic tree.
 
     Args:
-        input_file (str): Path to Roary 'gene_presence_absence.csv'.
+        input_file (str): Path to pangenome CSV (Roary 'gene_presence_absence_roary.csv' 
+                          or Panaroo 'gene_presence_absence.csv').
         expected_samples (list[str] | None): Optional ordered list of sample names
             expected in output (typically FASTA IDs). Missing samples are added
             as all-zero columns.
@@ -29,15 +30,17 @@ def pang_tree(input_file, expected_samples=None):
     # Load the CSV file
     csv_file = pd.read_csv(input_file, low_memory=False)
 
-    # Identify the column where presence/absence data begins
-    for i, name in enumerate(csv_file.columns):
-        if name == 'Avg group size nuc':
-            presence_start_idx = i + 1
-            break
+    # Identify format (Roary vs Panaroo) and find presence/absence start
+    if 'Avg group size nuc' in csv_file.columns:
+        # Roary format: find 'Avg group size nuc' and start after it
+        presence_start_idx = csv_file.columns.get_loc('Avg group size nuc') + 1
+    elif 'Annotation' in csv_file.columns:
+        # Panaroo format: find 'Annotation' and start after it
+        presence_start_idx = csv_file.columns.get_loc('Annotation') + 1
     else:
-        raise ValueError("The required column 'Avg group size nuc' was not found in the input file.")
+        raise ValueError("Could not determine pangenome format. Neither 'Avg group size nuc' (Roary) nor 'Annotation' (Panaroo) column found.")
 
-    # Extract presence/absence matrix: columns after 'Avg group size nuc'
+    # Extract presence/absence matrix: columns after the metadata section
     df = csv_file.iloc[:, presence_start_idx:]
 
     # Convert all non-empty cells (presence) to 1, and missing values (absence) to 0
@@ -81,7 +84,7 @@ def pang_tree(input_file, expected_samples=None):
             dist = hamming(vec1, vec2)
             row.append(dist)
             done_pairs += 1
-            if done_pairs % progress_step == 0 or done_pairs == total_pairs:
+            if done_pairs % progress_step == 0:
                 print(f"Pang progress: {done_pairs}/{total_pairs} pairs", flush=True)
         matrix.append(row)
 

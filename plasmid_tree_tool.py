@@ -125,7 +125,8 @@ def main():
         description="Plasmid Tree Tool: Build phylogenetic trees from plasmid sequences using dotplot, pangenome, and k-mer methods."
     )
     parser.add_argument("--fasta", required=True, help="Path to input FASTA file with plasmid sequences.")
-    parser.add_argument("--pang_csv", default=None, help="Roary output CSV file for pangenome presence/absence matrix.")
+    parser.add_argument("--pang_format", choices=["roary", "panaroo"], default="roary", help="Format of pangenome matrix: 'roary' (gene_presence_absence_roary.csv) or 'panaroo' (gene_presence_absence.csv). Default: roary.")
+    parser.add_argument("--pang_csv", default=None, help="Path to pangenome presence/absence CSV file. If not specified, auto-detects based on --pang_format.")
     parser.add_argument("--methods", nargs="*", choices=["dotplot", "pang", "kmer"], default=["dotplot"], help="Tree construction methods to apply. Default: dotplot only.")
     parser.add_argument("--outdir", default="output", help="Directory to store output files. Default: /output.")
     parser.add_argument("--max_cluster_size", type=int, default=None, help="Maximum OTUs per cluster in consensus tree. Default: 1/2 number of sequences.")
@@ -134,6 +135,18 @@ def main():
     parser.add_argument("--dotplot_png", action='store_true', help="Save dotplots for all pairwise comparisons as PNGs. Only for ≤20 sequences. Default: off.")
     parser.add_argument("--result_tree_png", action='store_true', help="Save consensus/result tree as PNG with node support and cluster coloring. Default: off.")
     args = parser.parse_args()
+
+    # Auto-detect pangenome CSV if not specified
+    if "pang" in args.methods and args.pang_csv is None:
+        if args.pang_format == "roary":
+            args.pang_csv = "dataset/gff_files/results/gene_presence_absence_roary.csv"
+        elif args.pang_format == "panaroo":
+            args.pang_csv = "dataset/gff_files/results/gene_presence_absence.csv"
+        
+        # Check if auto-detected file exists
+        if not os.path.exists(args.pang_csv):
+            parser.error(f"Pangenome file not found: {args.pang_csv}. Specify --pang_csv explicitly or use different --pang_format.")
+        print(f"Auto-detected pangenome file ({args.pang_format}): {args.pang_csv}")
 
     if args.dotplot_window not in (19, 21):
         parser.error("Unsupported value for --dotplot_window. Use 19 or 21.")

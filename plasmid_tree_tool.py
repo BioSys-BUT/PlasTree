@@ -130,7 +130,7 @@ def main():
     parser.add_argument("--outdir", default="output", help="Directory to store output files. Default: /output.")
     parser.add_argument("--max_cluster_size", type=int, default=None, help="Maximum OTUs per cluster in consensus tree. Default: 1/2 number of sequences.")
     parser.add_argument("--dotplot_window", type=int, default=21, help="Size of the sliding window for dotplot comparison. Supported values: 19 or 21. Default: 21.")
-    parser.add_argument("--dotplot_workers", type=int, default=1, help="Number of worker processes for dotplot pairwise distance computation. Default: 1.")
+    parser.add_argument("--dotplot_threads", type=int, default=1, help="Number of parallel worker processes for dotplot pairwise distance computation. Default: 1.")
     parser.add_argument("--dotplot_png", action='store_true', help="Save dotplots for all pairwise comparisons as PNGs. Only for ≤20 sequences. Default: off.")
     parser.add_argument("--result_tree_png", action='store_true', help="Save consensus/result tree as PNG with node support and cluster coloring. Default: off.")
     args = parser.parse_args()
@@ -138,8 +138,8 @@ def main():
     if args.dotplot_window not in (19, 21):
         parser.error("Unsupported value for --dotplot_window. Use 19 or 21.")
 
-    if args.dotplot_workers < 1:
-        parser.error("Unsupported value for --dotplot_workers. Use an integer >= 1.")
+    if args.dotplot_threads < 1:
+        parser.error("Unsupported value for --dotplot_threads. Use an integer >= 1.")
 
     os.makedirs(args.outdir, exist_ok=True)
     sequences = get_sequences(args.fasta)
@@ -173,7 +173,7 @@ def main():
     # DOTPLOT METHOD
     if "dotplot" in args.methods:
         print("Running dotplot method...")
-        dotmat_tree, dotmat_dist = dotplot_tree(sequences, args.dotplot_window, args.dotplot_png, args.outdir, args.dotplot_workers)
+        dotmat_tree, dotmat_dist = dotplot_tree(sequences, args.dotplot_window, args.dotplot_png, args.outdir, args.dotplot_threads)
         trees.append(dotmat_tree)
         save_tree(dotmat_tree, get_unique_filename(os.path.join(args.outdir, "dotplot_tree"), "newick"))
         save_distance_matrix(dotmat_dist, get_unique_filename(os.path.join(args.outdir, "dotplot_distmat"), "tsv"))

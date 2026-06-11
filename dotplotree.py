@@ -115,7 +115,7 @@ def _dot_mat_distance_core(seq1_str, seq2_str, window, gap):
     return 1 - (bin_match / (len(seq1) + len(seq2)))
 
 
-def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, workers=1):
+def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, threads=1):
     """
     Construct a UPGMA tree based on dotplot-derived similarity between sequences.
 
@@ -123,7 +123,7 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, work
         sequences (list of SeqRecord): Input sequences.
         window (int): Size of the sliding window for dotplot comparison.
         dotplot_view (bool): Whether to render dotplots for each pair.
-        workers (int): Number of worker processes for pairwise distance calculation.
+        threads (int): Number of parallel worker processes for pairwise distance calculation.
 
     Returns:
         tuple: (Phylogenetic tree, Distance matrix)
@@ -259,21 +259,21 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, work
     done_pairs = 0
     progress_step = max(1, math.ceil(total_pairs / 100)) if total_pairs else 1
 
-    if workers < 1:
-        raise ValueError("workers must be >= 1")
+    if threads < 1:
+        raise ValueError("threads must be >= 1")
 
     if dotplot_view and len(sequences) > 20:
         dotplot_view = False
         print("Too many sequences. Dot plot rendering has been disabled. Maximum 20 sequences.")
 
-    if workers > 1 and dotplot_view:
+    if threads > 1 and dotplot_view:
         dotplot_view = False
-        print("Dot plot rendering has been disabled for parallel execution (workers > 1).")
+        print("Dot plot rendering has been disabled for parallel execution (threads > 1).")
 
     if total_pairs:
         print(f"Dotplot progress: 0/{total_pairs} pairs", flush=True)
 
-    if workers == 1:
+    if threads == 1:
         for i, rec_one in enumerate(sequences):
             for j in range(i + 1, len(sequences)):
                 rec_two = sequences[j]
@@ -283,7 +283,7 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, work
                     print(f"Dotplot progress: {done_pairs}/{total_pairs} pairs", flush=True)
     else:
         future_to_pair = {}
-        with ProcessPoolExecutor(max_workers=workers) as executor:
+        with ProcessPoolExecutor(max_workers=threads) as executor:
             for i, rec_one in enumerate(sequences):
                 for j in range(i + 1, len(sequences)):
                     rec_two = sequences[j]

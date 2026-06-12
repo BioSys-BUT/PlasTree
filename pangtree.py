@@ -7,7 +7,7 @@ from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
 from scipy.spatial.distance import hamming
 import math
 
-def pang_tree(input_file, expected_samples=None):
+def pang_tree(input_file, expected_samples=None, expected_format=None):
     """
     Construct a UPGMA tree from pangenome presence/absence matrix.
 
@@ -34,11 +34,18 @@ def pang_tree(input_file, expected_samples=None):
     if 'Avg group size nuc' in csv_file.columns:
         # Roary format: find 'Avg group size nuc' and start after it
         presence_start_idx = csv_file.columns.get_loc('Avg group size nuc') + 1
+        actual_format = 'roary'
     elif 'Annotation' in csv_file.columns:
         # Panaroo format: find 'Annotation' and start after it
         presence_start_idx = csv_file.columns.get_loc('Annotation') + 1
+        actual_format = 'panaroo'
     else:
         raise ValueError("Could not determine pangenome format. Neither 'Avg group size nuc' (Roary) nor 'Annotation' (Panaroo) column found.")
+
+    if expected_format is not None and expected_format != actual_format:
+        raise ValueError(
+            f"Pangenome format mismatch: expected '{expected_format}' but the CSV looks like '{actual_format}'."
+        )
 
     # Extract presence/absence matrix: columns after the metadata section
     df = csv_file.iloc[:, presence_start_idx:]

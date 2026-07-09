@@ -122,11 +122,17 @@ All output files are written to `--outdir`.
 
 | File | Description |
 |---|---|
-| `dotplot_tree.newick`, `kmer_tree.newick`, `pang_tree.newick` | tree from each selected method |
-| `*_distmat.tsv` | corresponding distance matrix |
+| `dotplot_tree.newick` | DotPloTree structural similarity tree (`--methods dotplot`) |
+| `dotplot_distmat.tsv` | DotPloTree distance matrix |
+| `kmer_tree.newick` | KmerTree nucleotide composition tree (`--methods kmer`) |
+| `kmer_distmat.tsv` | KmerTree distance matrix |
+| `pang_tree.newick` | PanGTree gene content tree (`--methods pang`) |
+| `pang_distmat.tsv` | PanGTree distance matrix |
 | `consensus_tree.newick` | weighted consensus tree (only when 2+ methods are used) |
-| `plasmid_clusters.tsv` (or `plasmid_clusters_bl<value>.tsv` per threshold when multiple `--max_branch_length` values are given) | cluster assignment per plasmid (cluster 0 = outlier) |
-| `cluster_tree.png` (or `cluster_tree_<value>.png` per threshold; only with `--result_tree_png`) | consensus tree rendered with clusters color-coded |
+| `plasmid_clusters.tsv` | cluster assignment per plasmid (cluster 0 = outlier) |
+| `cluster_tree.png` | consensus tree rendered with clusters color-coded (only with `--result_tree_png`) |
+
+If multiple `--max_branch_length` values are given, `plasmid_clusters.tsv` and `cluster_tree.png` are produced once per threshold, suffixed with the value (dots replaced by underscores), e.g. `plasmid_clusters_bl0_2.tsv` and `cluster_tree_0_2.png` for threshold `0.2`.
 
 ## Generating pangenome input (Bakta + Roary/Panaroo)
 

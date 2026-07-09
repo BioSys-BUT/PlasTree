@@ -136,9 +136,9 @@ If multiple `--max_branch_length` values are given, `plasmid_clusters.tsv` and `
 
 ## Generating pangenome input (Bakta + Roary/Panaroo)
 
-The `--pang_csv` file used by `--methods pang` is not produced by PlasTree itself. It comes from annotating the same plasmids and clustering the predicted genes into orthologous groups, using external tools:
+The `--pang_csv` file used by `--methods pang` is not produced by PlasTree itself. It comes from annotating the same plasmid FASTA files and clustering the predicted genes into orthologous groups, using external tools:
 
-1. Split the `--fasta` file back into one FASTA file per plasmid (Bakta annotates one replicon at a time) and annotate each with [Bakta](https://github.com/oschwengers/bakta), producing one GFF3 file per plasmid.
+1. Annotate each plasmid with [Bakta](https://github.com/oschwengers/bakta), producing one GFF3 file per plasmid.
 2. Collect all resulting GFF3 files into one directory.
 3. Run [Roary](https://sanger-pathogens.github.io/Roary/) and/or [Panaroo](https://github.com/gtonkinhill/panaroo) on the collected GFF3 files:
 ```bash

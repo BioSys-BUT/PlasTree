@@ -56,7 +56,7 @@ With the environment active, install PlasTree directly from GitHub:
 pip install git+https://github.com/BioSys-BUT/PlasTree.git
 ```
 
-Or, if you want a local copy of the source (e.g. to run the tests):
+Or, if you want a local copy of the source:
 ```bash
 git clone https://github.com/BioSys-BUT/PlasTree.git
 cd PlasTree
@@ -67,8 +67,6 @@ Verify the install:
 ```bash
 plastree --help
 ```
-
-Remember to (re)activate the environment (`source plastree/bin/activate` or `conda activate plastree`) in every new terminal session before running `plastree`.
 
 ## Usage
 
@@ -117,13 +115,6 @@ All output files are written to `--outdir`.
 | `consensus_tree.newick` | weighted consensus tree (only when 2+ methods are used) |
 | `plasmid_clusters.tsv` (or `plasmid_clusters_bl<value>.tsv` per threshold when multiple `--max_branch_length` values are given) | cluster assignment per plasmid (cluster 0 = outlier) |
 | `cluster_tree.png` (or `cluster_tree_<value>.png` per threshold; only with `--result_tree_png`) | consensus tree rendered with clusters color-coded |
-
-## Testing (optional, for development)
-
-```bash
-pip install pytest
-pytest tests/ -q
-```
 
 ## License
 

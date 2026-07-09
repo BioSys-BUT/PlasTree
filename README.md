@@ -36,27 +36,30 @@ PlasTree integrates three complementary similarity methods, DotPloTree (pairwise
 
 ## Installation
 
-Extract the archive (or clone the repository) and move into the directory containing `pyproject.toml`:
-
-```bash
-tar -xzf plastree.tar.gz
-cd tool
-```
-
-Pick one of the environment options below. Both create an isolated environment named `plastree`.
+First create an isolated environment named `plastree` (pick one option below), then install PlasTree into it.
 
 **Option A: venv**
 ```bash
 python3 -m venv plastree
 source plastree/bin/activate
 pip install --upgrade pip
-pip install .
 ```
 
 **Option B: conda / miniforge**
 ```bash
 conda create -n plastree python=3.12
 conda activate plastree
+```
+
+With the environment active, install PlasTree directly from GitHub:
+```bash
+pip install git+https://github.com/BioSys-BUT/PlasTree.git
+```
+
+Or, if you want a local copy of the source (e.g. to run the tests):
+```bash
+git clone https://github.com/BioSys-BUT/PlasTree.git
+cd PlasTree
 pip install .
 ```
 

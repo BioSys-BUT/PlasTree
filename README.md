@@ -2,8 +2,6 @@
 
 A tree-based pipeline for clustering complete bacterial plasmids from long-read assemblies, combining structural, k-mer, and gene-content similarity into a single weighted consensus tree.
 
-![PlasTree overview](plastree_overview.png "PlasTree pipeline and an example consensus tree with color-coded clusters")
-
 ## Overview
 
 PlasTree integrates three complementary similarity methods, DotPloTree (pairwise dotplot-based structural similarity), KmerTree (ranked k-mer frequency similarity), and PanGTree (pangenome presence/absence similarity), and combines them into a single weighted consensus tree. Plasmids are then automatically grouped into clusters based on branch length and cluster size thresholds. PlasTree is intended for complete plasmid assemblies from long-read sequencing (e.g. Oxford Nanopore Technologies), where rearrangements, recombination, and accessory gene turnover can obscure relationships found by a single similarity measure.

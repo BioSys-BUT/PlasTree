@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "plastree"
-version = "0.1.1"
+version = "0.1.2"
 description = "Build plasmid phylogenetic trees from dotplot, pangenome presence/absence, and k-mer methods, with cluster detection."
 readme = "README.md"
 license = "MIT"

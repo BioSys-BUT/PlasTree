@@ -156,13 +156,14 @@ See [LICENSE](LICENSE) for details (MIT).
 
 ## Citation
 
-If you use PlasTree in your research, please cite:
+The manuscript describing PlasTree is currently in submission. Until it is published, if you use PlasTree in your research, please cite this repository:
 
 ```bibtex
-@article{plastree2026,
-  title={PlasTree: A Tree-Based Pipeline for Clustering Complete Plasmids from Long-Read Assemblies},
+@software{plastree2026,
+  title={PlasTree},
   author={Vitkova, Helena and Jakubickova, Marketa and Bezdicek, Matej and Holubova, Ema and Lengerova, Martina},
-  year={2026}
+  year={2026},
+  url={https://github.com/BioSys-BUT/PlasTree}
 }
 ```
 

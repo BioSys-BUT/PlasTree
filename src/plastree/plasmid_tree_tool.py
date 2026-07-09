@@ -11,9 +11,9 @@ import pandas as pd
 from Bio import SeqIO, Phylo
 from Bio.Phylo.TreeConstruction import DistanceMatrix
 from Bio.Phylo.Consensus import majority_consensus
-from dotplotree import dotplot_tree
-from pangtree import pang_tree
-from kmertree import kmer_tree
+from .dotplotree import dotplot_tree
+from .pangtree import pang_tree
+from .kmertree import kmer_tree
 
 def get_unique_filename(base_name, ext, max_digits=2):
     """
@@ -72,13 +72,14 @@ def save_distance_matrix(dist_mat, filename):
             row = [str(dist_mat[i, j]) if j < i else "" for j in range(len(dist_mat.names))]
             f.write(row_name + "\t" + "\t".join(row) + "\n")
 
-def largest_distant_nodes_with_table(tree, max_branches_in_cluster=None):
+def largest_distant_nodes_with_table(tree, max_branches_in_cluster=None, max_branch_length=0.2):
     """
     Identify and group most distinct clusters from a tree.
 
     Args:
         tree (Tree): Bio.Phylo tree object.
         max_branches_in_cluster (int): Max OTUs per cluster.
+        max_branch_length (float): Maximum allowed branch length within a cluster (0–1). None disables the check.
 
     Returns:
         tuple: (DataFrame with cluster IDs, list of cluster OTUs)
@@ -90,6 +91,14 @@ def largest_distant_nodes_with_table(tree, max_branches_in_cluster=None):
             branch.sort()
             branches.append(branch)
         return set(tuple(branch) for branch in branches)
+
+    def max_branch_length_in_cluster(tree, cluster):
+        leaves = set(cluster)
+        for clade in tree.get_nonterminals(order="preorder"):
+            if {leaf.name for leaf in clade.get_terminals()} == leaves:
+                branches = [c.branch_length for c in clade.find_clades() if c.branch_length and c is not clade]
+                return max(branches) if branches else 0.0
+        return 0.0
 
     branches_t1 = get_sorted_branches(tree)
     total_branches = len(branches_t1) + 1
@@ -104,7 +113,11 @@ def largest_distant_nodes_with_table(tree, max_branches_in_cluster=None):
     cluster_id = 1
 
     for cluster in sorted_clusters:
-        if len(cluster) <= max_branches_in_cluster and not selected_branches.intersection(cluster):
+        if (
+            len(cluster) <= max_branches_in_cluster
+            and not selected_branches.intersection(cluster)
+            and (max_branch_length is None or max_branch_length_in_cluster(tree, cluster) <= max_branch_length)
+        ):
             selected_clusters.append(cluster)
             selected_branches.update(cluster)
             for branch in cluster:
@@ -130,7 +143,8 @@ def main():
     parser.add_argument("--methods", nargs="*", choices=["dotplot", "pang", "kmer"], default=["dotplot"], help="Tree construction methods to apply. Default: dotplot only.")
     parser.add_argument("--outdir", default="output", help="Directory to store output files. Default: /output.")
     parser.add_argument("--max_cluster_size", type=int, default=None, help="Maximum OTUs per cluster in consensus tree. Default: 1/2 number of sequences.")
-    parser.add_argument("--dotplot_window", type=int, default=21, help="Size of the sliding window for dotplot comparison. Supported values: 19 or 21. Default: 21.")
+    parser.add_argument("--max_branch_length", type=float, nargs="+", default=[0.2], help="Maximum allowed branch length(s) within a cluster (0–1). Accepts one or more values (e.g. --max_branch_length 0.1 0.2 0.05); one plasmid_clusters TSV is produced per value. Default: 0.2.")
+    parser.add_argument("--dotplot_window", type=int, default=22, help="Size of the sliding window for dotplot comparison. Supported values: 19 or 22. Default: 22.")
     parser.add_argument("--dotplot_threads", type=int, default=1, help="Number of parallel worker processes for dotplot pairwise distance computation. Default: 1.")
     parser.add_argument("--dotplot_png", action='store_true', help="Save dotplots for all pairwise comparisons as PNGs. Only for ≤20 sequences. Default: off.")
     parser.add_argument("--result_tree_png", action='store_true', help="Save consensus/result tree as PNG with node support and cluster coloring. Default: off.")
@@ -144,8 +158,8 @@ def main():
         if not os.path.exists(args.pang_csv):
             parser.error(f"Pangenome file not found: {args.pang_csv}.")
 
-    if args.dotplot_window not in (19, 21):
-        parser.error("Unsupported value for --dotplot_window. Use 19 or 21.")
+    if args.dotplot_window not in (19, 22):
+        parser.error("Unsupported value for --dotplot_window. Use 19 or 22.")
 
     if args.dotplot_threads < 1:
         parser.error("Unsupported value for --dotplot_threads. Use an integer >= 1.")
@@ -154,13 +168,14 @@ def main():
     sequences = get_sequences(args.fasta)
     trees = []
 
-    def color_cluster_tree(tree, common_clusters):
+    def color_cluster_tree(tree, common_clusters, filename_suffix=None):
         """
         Render and save tree with colored clusters.
 
         Args:
             tree (Tree): Bio.Phylo tree object.
             common_clusters (list): List of clusters (lists of OTU names).
+            filename_suffix (str): Optional suffix to distinguish output files (e.g. per max_branch_length value).
         """
         # colors = ["#FF0000", "#0000FF", "#00FF00", "#800080", "#008080", "#FFA500", "#00FF85", "#FF00A5"]
         colors = ["#FF0000", "#0000FF", "#00FF00", "#800080", "#008080", "#FFA500", "#00FF85", "#FF00A5", "#A52A2A", "#FFFF00", "#00CED1", "#FF1493", "#7FFF00", "#DC143C", "#000080", "#FFD700", "#20B2AA", "#C71585", "#ADFF2F", "#FF6347", "#1E90FF", "#B22222", "#DA70D6", "#5F9EA0", "#40E0D0", "#FF4500", "#9ACD32", "#BA55D3", "#3CB371", "#8B4513"]
@@ -176,7 +191,8 @@ def main():
         Phylo.draw(tree, axes=axes, branch_labels=lambda c: "{:.2f}".format(c.confidence) if c.confidence else '')
         # Save to PNG instead of showing
         plt.tight_layout()
-        plt.savefig(get_unique_filename(os.path.join(args.outdir, "cluster_tree"), "png"), dpi=300)
+        base_name = "cluster_tree" if filename_suffix is None else f"cluster_tree_{filename_suffix}"
+        plt.savefig(get_unique_filename(os.path.join(args.outdir, base_name), "png"), dpi=300)
         plt.close()
 
     # DOTPLOT METHOD
@@ -226,11 +242,19 @@ def main():
     Phylo.draw_ascii(result_tree)
 
     # CLUSTERING + SAVE
-    cluster_table, clusters = largest_distant_nodes_with_table(result_tree, args.max_cluster_size)
-    cluster_table.to_csv(get_unique_filename(os.path.join(args.outdir, "plasmid_clusters"), "tsv"), sep="\t", index=False)
+    multiple_thresholds = len(args.max_branch_length) > 1
+    for max_branch_length in args.max_branch_length:
+        cluster_table, clusters = largest_distant_nodes_with_table(result_tree, args.max_cluster_size, max_branch_length)
+        if multiple_thresholds:
+            suffix = str(max_branch_length).replace(".", "_")
+            base_name = f"plasmid_clusters_bl{suffix}"
+        else:
+            suffix = None
+            base_name = "plasmid_clusters"
+        cluster_table.to_csv(get_unique_filename(os.path.join(args.outdir, base_name), "tsv"), sep="\t", index=False)
 
-    if args.result_tree_png:
-        color_cluster_tree(result_tree, clusters)
+        if args.result_tree_png:
+            color_cluster_tree(result_tree, clusters, filename_suffix=suffix)
 
 if __name__ == "__main__":
     main()

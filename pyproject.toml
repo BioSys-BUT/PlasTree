@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plastree"
+version = "0.1.0"
+description = "Build plasmid phylogenetic trees from dotplot, pangenome presence/absence, and k-mer methods, with cluster detection."
+requires-python = ">=3.10"
+dependencies = [
+    "biopython==1.87",
+    "numpy==2.4.6",
+    "pandas==2.3.3",
+    "scipy==1.17.1",
+    "matplotlib==3.10.9",
+]
+
+[project.scripts]
+plastree = "plastree.plasmid_tree_tool:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

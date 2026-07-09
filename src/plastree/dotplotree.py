@@ -22,7 +22,7 @@ def _find_long_segments(points, window, gap):
         return segments
 
     current_segment = [points[0]]
-    half_window = (window - 1) / 2
+    half_window = (window) / 2
 
     for i in range(1, len(points)):
         distance_x = abs(points[i][0] - current_segment[-1][0])
@@ -62,7 +62,7 @@ def _find_long_segments(points, window, gap):
 
 
 def _dot_mat_distance_core(seq1_str, seq2_str, window, gap):
-    if window == 21:
+    if window == 22:
         mask = '1110101100110010101111'
     else:
         mask = '1110100110010101111'
@@ -91,8 +91,10 @@ def _dot_mat_distance_core(seq1_str, seq2_str, window, gap):
     x, y = get_match_coordinates(matches, dict_one, dict_two)
     x2, y2 = get_match_coordinates(matches2, dict_one, dict_two2)
 
-    segments_direct = _find_long_segments(sorted(zip(x, y)), window, gap)
-    segments_reverse = _find_long_segments(sorted(zip(x2, y2)), window, gap)
+    segments_direct = _find_long_segments(
+        sorted(zip(x, y), key=lambda p: (p[1] - p[0], p[0])), window, gap)
+    segments_reverse = _find_long_segments(
+        sorted(zip(x2, y2), key=lambda p: (p[1] - p[0], p[0])), window, gap)
 
     bin_dir1 = np.zeros(len(seq1), dtype=int)
     bin_dir2 = np.zeros(len(seq2), dtype=int)
@@ -115,7 +117,7 @@ def _dot_mat_distance_core(seq1_str, seq2_str, window, gap):
     return 1 - (bin_match / (len(seq1) + len(seq2)))
 
 
-def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, threads=1):
+def dotplot_tree(sequences, window=22, dotplot_view=False, output_dir=None, threads=1):
     """
     Construct a UPGMA tree based on dotplot-derived similarity between sequences.
 
@@ -195,7 +197,7 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, thre
         Returns:
             float: Dotplot-based distance.
         """
-        if window == 21:
+        if window == 22:
             mask = '1110101100110010101111'
         else:
             mask = '1110100110010101111'
@@ -224,8 +226,10 @@ def dotplot_tree(sequences, window=21, dotplot_view=False, output_dir=None, thre
         x, y = get_match_coordinates(matches, dict_one, dict_two)
         x2, y2 = get_match_coordinates(matches2, dict_one, dict_two2)
 
-        segments_direct = _find_long_segments(sorted(zip(x, y)), window, gap)
-        segments_reverse = _find_long_segments(sorted(zip(x2, y2)), window, gap)
+        segments_direct = _find_long_segments(
+            sorted(zip(x, y), key=lambda p: (p[1] - p[0], p[0])), window, gap)
+        segments_reverse = _find_long_segments(
+            sorted(zip(x2, y2), key=lambda p: (p[1] - p[0], p[0])), window, gap)
 
         if dotplot:
             dotplotxy_segments(x, y, x2, y2, segments_direct, segments_reverse, window, mask)

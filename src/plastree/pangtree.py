@@ -91,7 +91,7 @@ def pang_tree(input_file, expected_samples=None, expected_format=None):
             dist = hamming(vec1, vec2)
             row.append(dist)
             done_pairs += 1
-            if done_pairs % progress_step == 0:
+            if done_pairs % progress_step == 0 or done_pairs == total_pairs:
                 print(f"Pang progress: {done_pairs}/{total_pairs} pairs", flush=True)
         matrix.append(row)
 

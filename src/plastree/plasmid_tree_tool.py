@@ -186,7 +186,10 @@ def main():
                 mrca.color = colors[i % len(colors)]
         import warnings
         warnings.filterwarnings("ignore", category=UserWarning, module="Bio.Phylo._utils")
-        fig = plt.figure(figsize=(10, 15))
+        num_leaves = tree.count_terminals()
+        fig_height = max(15, num_leaves * 0.25)
+        fig_width = max(10, num_leaves * 0.06)
+        fig = plt.figure(figsize=(fig_width, fig_height))
         axes = fig.add_subplot(1, 1, 1)
         Phylo.draw(tree, axes=axes, branch_labels=lambda c: "{:.2f}".format(c.confidence) if c.confidence else '')
         # Save to PNG instead of showing

@@ -6,7 +6,22 @@ build-backend = "setuptools.build_meta"
 name = "plastree"
 version = "0.1.0"
 description = "Build plasmid phylogenetic trees from dotplot, pangenome presence/absence, and k-mer methods, with cluster detection."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Helena Vitkova" },
+    { name = "Marketa Jakubickova", email = "jakubickova@vut.cz" },
+    { name = "Matej Bezdicek" },
+    { name = "Ema Holubova" },
+    { name = "Martina Lengerova" },
+]
 requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
 dependencies = [
     "biopython==1.87",
     "numpy==2.4.6",
@@ -14,6 +29,11 @@ dependencies = [
     "scipy==1.17.1",
     "matplotlib==3.10.9",
 ]
+
+[project.urls]
+Homepage = "https://github.com/BioSys-BUT/PlasTree"
+Repository = "https://github.com/BioSys-BUT/PlasTree"
+Issues = "https://github.com/BioSys-BUT/PlasTree/issues"
 
 [project.scripts]
 plastree = "plastree.plasmid_tree_tool:main"

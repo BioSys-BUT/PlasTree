@@ -52,7 +52,12 @@ conda create -n plastree python=3.12
 conda activate plastree
 ```
 
-With the environment active, install PlasTree directly from GitHub:
+With the environment active, install PlasTree from PyPI:
+```bash
+pip install plastree
+```
+
+Or, install directly from GitHub (e.g. to get unreleased changes):
 ```bash
 pip install git+https://github.com/BioSys-BUT/PlasTree.git
 ```

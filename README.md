@@ -115,7 +115,6 @@ plastree \
   --result_tree_png \
   --outdir examples/output
 ```
-Runs in a few seconds and writes `examples/output/cluster_tree.png` (the 8 plasmids split into a few small clusters) plus the Newick/TSV files listed below.
 
 ### Output
 

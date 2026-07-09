@@ -136,33 +136,19 @@ If multiple `--max_branch_length` values are given, `plasmid_clusters.tsv` and `
 
 ## Generating pangenome input (Bakta + Roary/Panaroo)
 
-The `--pang_csv` file used by `--methods pang` is not produced by PlasTree itself. It comes from annotating the same plasmid FASTA files and clustering the predicted genes into orthologous groups, using external tools.
+The `--pang_csv` file used by `--methods pang` is not produced by PlasTree itself. It comes from annotating the same plasmid FASTA files and clustering the predicted genes into orthologous groups, using external tools:
 
-1. Annotate each plasmid with [Bakta](https://github.com/oschwengers/bakta) (one GFF3 file per plasmid):
-```bash
-for fasta in *.fasta; do
-    sample=$(basename "$fasta" .fasta)
-    bakta --db /path/to/bakta/db --threads 16 --output "${sample}_bakta" --skip-sorf "$fasta"
-done
-```
-
-2. Collect all resulting GFF3 files into one directory:
-```bash
-mkdir -p all_gff3
-find . -mindepth 2 -name '*.gff3' -exec cp {} all_gff3/ \;
-cd all_gff3
-```
-
+1. Annotate each plasmid with [Bakta](https://github.com/oschwengers/bakta), producing one GFF3 file per plasmid.
+2. Collect all resulting GFF3 files into one directory.
 3. Run [Roary](https://sanger-pathogens.github.io/Roary/) and/or [Panaroo](https://github.com/gtonkinhill/panaroo) on the collected GFF3 files:
 ```bash
-# Roary
-roary *.gff3 -t 4
-
-# Panaroo
-panaroo -i *.gff3 -o panaroo_out --clean-mode sensitive -t 16
+roary *.gff3
+```
+```bash
+panaroo -i *.gff3 -o panaroo_out
 ```
 
-Both produce a `gene_presence_absence.csv` (Panaroo additionally writes a Roary-compatible `gene_presence_absence_roary.csv`). Pass this file as `--pang_csv`, together with the matching `--pang_format roary` or `--pang_format panaroo`. Bakta, Roary, and Panaroo each have their own, sometimes conflicting, dependencies, so it is common to install them into separate environments (e.g. separate conda environments).
+Both produce a `gene_presence_absence.csv` (Panaroo additionally writes a Roary-compatible `gene_presence_absence_roary.csv`). Pass this file as `--pang_csv`, together with the matching `--pang_format roary` or `--pang_format panaroo`. See each tool's own documentation for annotation database setup, threading, and other options. Bakta, Roary, and Panaroo have their own, sometimes conflicting, dependencies, so it is common to install them into separate environments (e.g. separate conda environments).
 
 ## License
 

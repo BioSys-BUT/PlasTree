@@ -17,6 +17,7 @@ PlasTree integrates three complementary similarity methods, DotPloTree (pairwise
   - [Parameters](#parameters)
   - [Example](#example)
   - [Output](#output)
+- [Generating pangenome input (Bakta + Roary/Panaroo)](#generating-pangenome-input-bakta--roarypanaroo)
 - [License](#license)
 - [Citation](#citation)
 - [Contact](#contact)
@@ -104,6 +105,18 @@ plastree \
   --outdir output
 ```
 
+with example data (8 small real plasmids from *Enterococcus faecium*, included in [`examples/`](examples)):
+```bash
+plastree \
+  --fasta examples/plasmids.fasta \
+  --methods dotplot kmer pang \
+  --pang_format panaroo \
+  --pang_csv examples/gene_presence_absence.csv \
+  --result_tree_png \
+  --outdir examples/output
+```
+Runs in a few seconds and writes `examples/output/cluster_tree.png` (the 8 plasmids split into a few small clusters) plus the Newick/TSV files listed below.
+
 ### Output
 
 All output files are written to `--outdir`.
@@ -115,6 +128,36 @@ All output files are written to `--outdir`.
 | `consensus_tree.newick` | weighted consensus tree (only when 2+ methods are used) |
 | `plasmid_clusters.tsv` (or `plasmid_clusters_bl<value>.tsv` per threshold when multiple `--max_branch_length` values are given) | cluster assignment per plasmid (cluster 0 = outlier) |
 | `cluster_tree.png` (or `cluster_tree_<value>.png` per threshold; only with `--result_tree_png`) | consensus tree rendered with clusters color-coded |
+
+## Generating pangenome input (Bakta + Roary/Panaroo)
+
+The `--pang_csv` file used by `--methods pang` is not produced by PlasTree itself. It comes from annotating the same plasmid FASTA files and clustering the predicted genes into orthologous groups, using external tools.
+
+1. Annotate each plasmid with [Bakta](https://github.com/oschwengers/bakta) (one GFF3 file per plasmid):
+```bash
+for fasta in *.fasta; do
+    sample=$(basename "$fasta" .fasta)
+    bakta --db /path/to/bakta/db --threads 16 --output "${sample}_bakta" --skip-sorf "$fasta"
+done
+```
+
+2. Collect all resulting GFF3 files into one directory:
+```bash
+mkdir -p all_gff3
+find . -mindepth 2 -name '*.gff3' -exec cp {} all_gff3/ \;
+cd all_gff3
+```
+
+3. Run [Roary](https://sanger-pathogens.github.io/Roary/) and/or [Panaroo](https://github.com/gtonkinhill/panaroo) on the collected GFF3 files:
+```bash
+# Roary
+roary *.gff3 -t 4
+
+# Panaroo
+panaroo -i *.gff3 -o panaroo_out --clean-mode sensitive -t 16
+```
+
+Both produce a `gene_presence_absence.csv` (Panaroo additionally writes a Roary-compatible `gene_presence_absence_roary.csv`). Pass this file as `--pang_csv`, together with the matching `--pang_format roary` or `--pang_format panaroo`. Bakta, Roary, and Panaroo each have their own, sometimes conflicting, dependencies, so it is common to install them into separate environments (e.g. separate conda environments).
 
 ## License
 

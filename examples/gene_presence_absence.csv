@@ -1,0 +1,24 @@
+Gene,Non-unique Gene name,Annotation,FI515_contig_6,FI519_contig_6,FI541_contig_8,FI541_contig_9,FI553_contig_7,FI559_contig_8,FI566_contig_8,FI575_contig_9
+group_17,,Replication initiation factor domain-containing protein;Replication initiation factor;replication initiation factor domain-containing protein,,,,,LNBDJK_05,,ELHNBK_04,EAMEKO_01
+group_16,,DUF4355 domain-containing protein,,,,,LNBDJK_01,,ELHNBK_01,EAMEKO_04
+mobA,;mobA,hypothetical protein;Mobilization-like protein;MobA,,,,,LNBDJK_07,,ELHNBK_06,EAMEKO_05
+group_15,,DNA-binding protein,,,,,LNBDJK_03,,ELHNBK_03,EAMEKO_02
+group_14,,hypothetical protein,,,,,LNBDJK_02,,ELHNBK_02,EAMEKO_03
+copG,copG,CopG family transcriptional regulator,,,,BAGFMI_04,,HDKEBO_01,,
+group_13,,Rep family protein;replication protein,,,,BAGFMI_03,,HDKEBO_02,,
+group_12,,Helix-turn-helix domain-containing protein,,,,BAGFMI_01,,HDKEBO_04,,
+group_11,,Phage protein,,,,BAGFMI_02,,HDKEBO_03,,
+group_6,,hypothetical protein,CPLEEL_008,NCANPP_03,,,,,,
+group_5,,hypothetical protein,CPLEEL_001,NCANPP_05,,,,,,
+group_4,,Lipoprotein,CPLEEL_005,NCANPP_09,,,,,,
+tnp,tnp,IS200/IS605 family ISEfa4 transposase,CPLEEL_003,NCANPP_07,,,,,,
+group_3,,Phage protein,CPLEEL_009,NCANPP_04,,,,,,
+group_2,,DUF536 domain-containing protein,CPLEEL_007,NCANPP_02,,,,,,
+group_1,,C47 family peptidase,CPLEEL_004,NCANPP_08,,,,,,
+group_0,,Initiator Rep protein WH1 domain-containing protein,CPLEEL_006,NCANPP_01,,,,,,
+tnpB,tnpB,IS200/IS605 family element RNA-guided endonuclease TnpB,CPLEEL_002,NCANPP_06,,,,,,
+group_18,,RNA chaperone Hfq,,,,,LNBDJK_04,,,
+group_10,,hypothetical protein,,,IDHFDL_03,,,,,
+group_9,,hypothetical protein,,,IDHFDL_04,,,,,
+group_8,,DUF3987 domain-containing protein,,,IDHFDL_02,,,,,
+group_7,,Initiator Rep protein WH1 domain-containing protein,,,IDHFDL_01,,,,,

@@ -150,7 +150,7 @@ The `--pang_csv` file used by `--methods pang` is not produced by PlasTree itsel
 roary *.gff3 -f roary_out
 ```
 ```bash
-panaroo -i *.gff3 -o panaroo_out
+panaroo -i *.gff3 --clean-mode sensitive -o panaroo_out
 ```
 
 Both produce a `gene_presence_absence.csv`. Pass this file as `--pang_csv`, together with the matching `--pang_format roary` or `--pang_format panaroo`. See each tool's own documentation for annotation database setup, threading, and other options. Bakta, Roary, and Panaroo have their own, sometimes conflicting, dependencies, so it is common to install them into separate environments (e.g. separate conda environments).

@@ -142,7 +142,7 @@ def main():
     parser.add_argument("--pang_csv", default=None, help="Path to the pangenome presence/absence CSV file. Required when using --methods pang.")
     parser.add_argument("--methods", nargs="*", choices=["dotplot", "pang", "kmer"], default=["dotplot"], help="Tree construction methods to apply. Default: dotplot only.")
     parser.add_argument("--outdir", default="output", help="Directory to store output files. Default: /output.")
-    parser.add_argument("--max_cluster_size", type=int, default=None, help="Maximum OTUs per cluster in consensus tree. Default: 1/2 number of sequences.")
+    parser.add_argument("--max_cluster_size", type=int, default=None, help="Maximum number of plasmid sequences per cluster in consensus tree. Default: 1/2 number of sequences.")
     parser.add_argument("--max_branch_length", type=float, nargs="+", default=[0.2], help="Maximum allowed branch length(s) within a cluster (0–1). Accepts one or more values (e.g. --max_branch_length 0.1 0.2 0.05); one plasmid_clusters TSV is produced per value. Default: 0.2.")
     parser.add_argument("--dotplot_window", type=int, default=22, help="Size of the sliding window for dotplot comparison. Supported values: 19 or 22. Default: 22.")
     parser.add_argument("--dotplot_threads", type=int, default=1, help="Number of parallel worker processes for dotplot pairwise distance computation. Default: 1.")

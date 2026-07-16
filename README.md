@@ -87,7 +87,7 @@ plastree --fasta <fasta_path> [--pang_format {roary,panaroo}] [--pang_csv <csv_p
 - `--pang_csv`: Path to the pangenome presence/absence CSV file. Required when using `--methods pang`.
 - `--methods [dotplot pang kmer ...]`: Tree construction methods to apply. Default: `dotplot` only.
 - `--outdir`: Directory to store output files. Default: `output`.
-- `--max_cluster_size`: Maximum OTUs (plasmids) per cluster. Default: half the number of input sequences.
+- `--max_cluster_size`: Maximum number of plasmid sequences per cluster. Default: half the number of input sequences.
 - `--max_branch_length`: Maximum allowed branch length within a cluster (0-1). Accepts one or more values (e.g. `0.1 0.2 0.05`); one cluster-assignment table is produced per value. Default: `0.2`.
 - `--dotplot_window {19,22}`: Sliding window size for dotplot comparison. Default: `22`.
 - `--dotplot_threads`: Number of parallel worker processes for dotplot pairwise distance computation. Default: `1`.

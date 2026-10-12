@@ -61,11 +61,19 @@ def _find_long_segments(points, window, gap):
     return final_segments
 
 
+#: Spaced seed recommended for LASTZ, with 14 informative positions in a
+#: 22 bp window. Zeros mark positions where a mismatch is tolerated. The
+#: window length is fixed by the mask: a shorter window would silently
+#: truncate it and a longer one would leave its tail unmasked.
+SEED_MASK = '1110101100110010101111'
+DOTPLOT_WINDOW = len(SEED_MASK)
+
+
 def _dot_mat_distance_core(seq1_str, seq2_str, window, gap):
-    if window == 22:
-        mask = '1110101100110010101111'
-    else:
-        mask = '1110100110010101111'
+    if window != DOTPLOT_WINDOW:
+        raise ValueError(
+            f"window must be {DOTPLOT_WINDOW} to match the seed mask, got {window}")
+    mask = SEED_MASK
 
     seq1 = seq1_str.upper()
     seq2 = seq2_str.upper()
@@ -197,10 +205,10 @@ def dotplot_tree(sequences, window=22, dotplot_view=False, output_dir=None, thre
         Returns:
             float: Dotplot-based distance.
         """
-        if window == 22:
-            mask = '1110101100110010101111'
-        else:
-            mask = '1110100110010101111'
+        if window != DOTPLOT_WINDOW:
+            raise ValueError(
+                f"window must be {DOTPLOT_WINDOW} to match the seed mask, got {window}")
+        mask = SEED_MASK
 
         seq2rc = seq2.seq.reverse_complement()
         dict_one, dict_two, dict_two2 = {}, {}, {}

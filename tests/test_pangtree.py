@@ -137,3 +137,38 @@ def test_distance_symmetry(tmp_path):
     csv = write_panaroo_csv(tmp_path, data)
     tree, dist_mat = pang_tree(csv, expected_format="panaroo")
     assert dist_mat["A", "B"] == pytest.approx(dist_mat["B", "A"], abs=1e-10)
+
+def test_jaccard_ignores_shared_absences(tmp_path):
+    """Sharing most of a repertoire must beat sharing nothing.
+
+    Under Hamming the shared absences dominate a sparse matrix, so C and D,
+    which have no gene in common, came out closer than A and B, which share
+    eight of twelve. Jaccard ignores positions where both are zero.
+    """
+    genes = [f"g{i}" for i in range(12)]
+    data = {
+        "A": {g: i < 10 for i, g in enumerate(genes)},
+        "B": {g: (i < 8 or i >= 10) for i, g in enumerate(genes)},
+        "C": {g: i == 8 for i, g in enumerate(genes)},
+        "D": {g: i == 9 for i, g in enumerate(genes)},
+    }
+    _, dm = pang_tree(write_panaroo_csv(tmp_path, data))
+
+    assert dm["C", "D"] == pytest.approx(1.0)          # disjoint repertoires
+    assert dm["A", "B"] == pytest.approx(1 - 8 / 12)   # 8 shared of 12 in union
+    assert dm["A", "B"] < dm["C", "D"]
+
+
+def test_identical_gene_content_is_zero(tmp_path):
+    genes = [f"g{i}" for i in range(5)]
+    data = {"A": {g: True for g in genes}, "B": {g: True for g in genes}}
+    _, dm = pang_tree(write_panaroo_csv(tmp_path, data))
+    assert dm["A", "B"] == pytest.approx(0.0)
+
+
+def test_plasmids_without_genes_are_not_distant(tmp_path):
+    """Samples absent from the pangenome table become all-zero columns."""
+    genes = [f"g{i}" for i in range(4)]
+    data = {"A": {g: False for g in genes}, "B": {g: False for g in genes}}
+    _, dm = pang_tree(write_panaroo_csv(tmp_path, data))
+    assert dm["A", "B"] == pytest.approx(0.0)

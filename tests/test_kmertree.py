@@ -69,3 +69,26 @@ def test_three_sequences_tree_topology():
     tree, dist_mat = kmer_tree(seqs)
     assert dist_mat["A", "B"] < dist_mat["A", "C"]
     assert dist_mat["A", "B"] < dist_mat["B", "C"]
+
+def test_distance_does_not_depend_on_what_else_is_in_the_input():
+    """The pair A,B must score the same whether or not C is analysed with them.
+
+    The normaliser used to be the largest distance observed in the input, so
+    adding an unrelated sequence rescaled every distance in the matrix and the
+    branch-length threshold meant something different in each run.
+    """
+    seq1 = "ATCGATCGATCGATCGATCG" * 20
+    seq2 = "ATCGATCGATGGATCGATCG" * 20
+    seq3 = "GGGGCCCCGGGGCCCCGGGG" * 40  # very different, and a different length
+
+    _, pair = kmer_tree([make_seq(seq1, "A"), make_seq(seq2, "B")])
+    _, trio = kmer_tree([make_seq(seq1, "A"), make_seq(seq2, "B"),
+                         make_seq(seq3, "C")])
+    assert trio["A", "B"] == pytest.approx(pair["A", "B"], rel=1e-12)
+
+
+def test_distances_stay_within_the_unit_interval():
+    seq1 = "ATCGATCGATCGATCGATCG" * 20
+    seq2 = "GGGGCCCCGGGGCCCCGGGG" * 20
+    _, dm = kmer_tree([make_seq(seq1, "A"), make_seq(seq2, "B")])
+    assert 0.0 <= dm["A", "B"] <= 1.0

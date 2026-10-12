@@ -4,7 +4,7 @@
 
 import pandas as pd
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
-from scipy.spatial.distance import hamming
+from scipy.spatial.distance import jaccard
 import math
 
 def pang_tree(input_file, expected_samples=None, expected_format=None):
@@ -13,7 +13,7 @@ def pang_tree(input_file, expected_samples=None, expected_format=None):
 
     This function reads a pangenome CSV file (Roary or Panaroo format),
     extracts the binary matrix of gene presence across samples, calculates pairwise
-    Hamming distances between samples, and builds a UPGMA phylogenetic tree.
+    Jaccard distances between samples, and builds a UPGMA phylogenetic tree.
 
     Args:
         input_file (str): Path to pangenome CSV (Roary 'gene_presence_absence_roary.csv' 
@@ -81,14 +81,21 @@ def pang_tree(input_file, expected_samples=None, expected_format=None):
     if total_pairs:
         print(f"Pang progress: 0/{total_pairs} pairs", flush=True)
 
-    # Compute lower-triangular Hamming distance matrix
+    # Compute lower-triangular Jaccard distance matrix
     matrix = []
     for i in range(len(names)):
         row = []
         for j in range(i):
             vec1 = df[names[i]].values
             vec2 = df[names[j]].values
-            dist = hamming(vec1, vec2)
+            # Jaccard rather than Hamming: the matrix is sparse, so most gene
+            # groups are absent from most plasmids. Hamming counts those shared
+            # absences as agreement, which makes two small plasmids with no gene
+            # in common come out closer than two large ones sharing most of
+            # their repertoire. Jaccard ignores positions where both are zero.
+            # Two plasmids with no annotated genes at all give 0.0 by SciPy's
+            # convention, as they did under Hamming.
+            dist = jaccard(vec1, vec2)
             row.append(dist)
             done_pairs += 1
             if done_pairs % progress_step == 0 or done_pairs == total_pairs:

@@ -17,6 +17,7 @@ PlasTree integrates three complementary similarity methods, DotPloTree (pairwise
   - [Parameters](#parameters)
   - [Example](#example)
   - [Output](#output)
+- [Changes in 0.2.0](#changes-in-020)
 - [Generating pangenome input (Bakta + Roary/Panaroo)](#generating-pangenome-input-bakta--roarypanaroo)
 - [License](#license)
 - [Citation](#citation)
@@ -25,7 +26,7 @@ PlasTree integrates three complementary similarity methods, DotPloTree (pairwise
 ## Key Features
 
 - **Three independent tree-building methods**: DotPloTree (structural), KmerTree (nucleotide composition), and PanGTree (gene content, Roary or Panaroo format)
-- **Weighted consensus tree** (3:2:1 DotPloTree:PanGTree:KmerTree) when two or more methods are combined
+- **Weighted consensus tree** (2:1:1 DotPloTree:PanGTree:KmerTree) when two or more methods are combined; clades are counted by plasmid identity, so the result does not depend on the order in which the methods are run
 - **Automatic clustering** of plasmids by branch length, with support for multiple thresholds computed in a single run
 - **Installable as a standard Python package**, exposing a single `plastree` command
 - Optional PNG rendering of pairwise dotplots and the final cluster-colored consensus tree
@@ -77,7 +78,7 @@ plastree --help
 ## Usage
 
 ```bash
-plastree --fasta <fasta_path> [--pang_format {roary,panaroo}] [--pang_csv <csv_path>] [--methods dotplot kmer pang] [--outdir <out_dir>] [--max_cluster_size <int>] [--max_branch_length <float> [<float> ...]] [--dotplot_window {19,22}] [--dotplot_threads <int>] [--dotplot_png] [--result_tree_png]
+plastree --fasta <fasta_path> [--pang_format {roary,panaroo}] [--pang_csv <csv_path>] [--methods dotplot kmer pang] [--outdir <out_dir>] [--max_cluster_size <int>] [--max_branch_length <float> [<float> ...]] [--dotplot_threads <int>] [--dotplot_png] [--result_tree_png]
 ```
 
 ### Parameters
@@ -88,8 +89,7 @@ plastree --fasta <fasta_path> [--pang_format {roary,panaroo}] [--pang_csv <csv_p
 - `--methods [dotplot pang kmer ...]`: Tree construction methods to apply. Default: `dotplot` only.
 - `--outdir`: Directory to store output files. Default: `output`.
 - `--max_cluster_size`: Maximum number of plasmid sequences per cluster. Default: half the number of input sequences.
-- `--max_branch_length`: Maximum allowed branch length within a cluster (0-1). Accepts one or more values (e.g. `0.1 0.2 0.05`); one cluster-assignment table is produced per value. Default: `0.2`.
-- `--dotplot_window {19,22}`: Sliding window size for dotplot comparison. Default: `22`.
+- `--max_branch_length`: Maximum allowed branch length within a cluster (0-1). Accepts one or more values (e.g. `0.1 0.2 0.05`); one cluster-assignment table is produced per value. Default: `0.02 0.1`.
 - `--dotplot_threads`: Number of parallel worker processes for dotplot pairwise distance computation. Default: `1`.
 - `--dotplot_png`: Save pairwise dotplots as PNGs. Only for <=20 sequences. Default: off.
 - `--result_tree_png`: Save the consensus tree as a PNG with node support and cluster coloring. Default: off.
@@ -102,7 +102,6 @@ plastree \
   --methods dotplot kmer pang \
   --pang_format panaroo \
   --pang_csv gene_presence_absence.csv \
-  --dotplot_window 22 \
   --dotplot_threads 8 \
   --max_cluster_size 30 \
   --max_branch_length 0.05 0.1 0.2 0.4 \
@@ -138,6 +137,16 @@ All output files are written to `--outdir`.
 | `cluster_tree.png` | consensus tree rendered with clusters color-coded (only with `--result_tree_png`) |
 
 If multiple `--max_branch_length` values are given, `plasmid_clusters.tsv` and `cluster_tree.png` are produced once per threshold, suffixed with the value (dots replaced by underscores), e.g. `plasmid_clusters_bl0_2.tsv` and `cluster_tree_0_2.png` for threshold `0.2`.
+
+## Changes in 0.2.0
+
+Version 0.2.0 changes the results, so trees and clusters will differ from those produced by 0.1.x for the same input.
+
+- **PanGTree** uses Jaccard instead of Hamming distance. Gene groups absent from both plasmids no longer count as agreement, which matters because the presence/absence matrix is sparse.
+- **KmerTree** divides each distance matrix by the largest value attainable for a given k (`2**k`) instead of the largest value observed in the input. The same pair of plasmids now receives the same distance regardless of which other plasmids are in the file, so a `--max_branch_length` threshold has a fixed meaning across analyses.
+- **Consensus tree** is computed by a weighted greedy consensus that counts clades by plasmid identity (DotPloTree : PanGTree : KmerTree = 2:1:1). Previously Biopython's `majority_consensus` was used, which compared clades through each tree's own leaf order.
+- **`--dotplot_window` was removed.** The window length is now fixed at 22 bp by the spaced seed. Remove this option from existing commands, otherwise PlasTree exits with an error.
+- **Default `--max_branch_length`** changed from `0.2` to `0.02 0.1`. Pass the values explicitly (e.g. `--max_branch_length 0.05 0.1 0.2 0.4`) to reproduce earlier thresholds.
 
 ## Generating pangenome input (Bakta + Roary/Panaroo)
 

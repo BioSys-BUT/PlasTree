@@ -139,3 +139,12 @@ def test_tree_circular_permutation_clusters_together():
     assert dist_mat["orig", "perm1"] < 0.05
     assert dist_mat["orig", "perm2"] < 0.05
     assert dist_mat["perm1", "perm2"] < 0.05
+
+def test_window_must_match_the_seed_mask():
+    """Only the 22 bp window is supported; the mask fixes the window length."""
+    from plastree.dotplotree import DOTPLOT_WINDOW, SEED_MASK, _dot_mat_distance_core
+
+    assert DOTPLOT_WINDOW == len(SEED_MASK) == 22
+    seq = "ATCGATCGATCGATCGATCGATCGATCGATCG" * 4
+    with pytest.raises(ValueError, match="window must be 22"):
+        _dot_mat_distance_core(seq, seq, window=19, gap=38)

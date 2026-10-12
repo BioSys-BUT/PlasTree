@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from Bio import SeqIO, Phylo
 from Bio.Phylo.TreeConstruction import DistanceMatrix
-from Bio.Phylo.Consensus import majority_consensus
-from .dotplotree import dotplot_tree
+from .consensus import weighted_greedy_consensus
+from .dotplotree import DOTPLOT_WINDOW, dotplot_tree
 from .pangtree import pang_tree
 from .kmertree import kmer_tree
 
@@ -143,8 +143,7 @@ def main():
     parser.add_argument("--methods", nargs="*", choices=["dotplot", "pang", "kmer"], default=["dotplot"], help="Tree construction methods to apply. Default: dotplot only.")
     parser.add_argument("--outdir", default="output", help="Directory to store output files. Default: /output.")
     parser.add_argument("--max_cluster_size", type=int, default=None, help="Maximum number of plasmid sequences per cluster in consensus tree. Default: 1/2 number of sequences.")
-    parser.add_argument("--max_branch_length", type=float, nargs="+", default=[0.2], help="Maximum allowed branch length(s) within a cluster (0–1). Accepts one or more values (e.g. --max_branch_length 0.1 0.2 0.05); one plasmid_clusters TSV is produced per value. Default: 0.2.")
-    parser.add_argument("--dotplot_window", type=int, default=22, help="Size of the sliding window for dotplot comparison. Supported values: 19 or 22. Default: 22.")
+    parser.add_argument("--max_branch_length", type=float, nargs="+", default=[0.02, 0.1], help="Maximum allowed branch length(s) within a cluster (0–1). Accepts one or more values; one plasmid_clusters TSV is produced per value. Defaults: 0.02 for subclusters and 0.1 for main clusters.")
     parser.add_argument("--dotplot_threads", type=int, default=1, help="Number of parallel worker processes for dotplot pairwise distance computation. Default: 1.")
     parser.add_argument("--dotplot_png", action='store_true', help="Save dotplots for all pairwise comparisons as PNGs. Only for ≤20 sequences. Default: off.")
     parser.add_argument("--result_tree_png", action='store_true', help="Save consensus/result tree as PNG with node support and cluster coloring. Default: off.")
@@ -158,8 +157,6 @@ def main():
         if not os.path.exists(args.pang_csv):
             parser.error(f"Pangenome file not found: {args.pang_csv}.")
 
-    if args.dotplot_window not in (19, 22):
-        parser.error("Unsupported value for --dotplot_window. Use 19 or 22.")
 
     if args.dotplot_threads < 1:
         parser.error("Unsupported value for --dotplot_threads. Use an integer >= 1.")
@@ -201,8 +198,9 @@ def main():
     # DOTPLOT METHOD
     if "dotplot" in args.methods:
         print("Running dotplot method...")
-        dotmat_tree, dotmat_dist = dotplot_tree(sequences, args.dotplot_window, args.dotplot_png, args.outdir, args.dotplot_threads)
-        trees.append(dotmat_tree)
+        dotmat_tree, dotmat_dist = dotplot_tree(sequences, DOTPLOT_WINDOW, args.dotplot_png, args.outdir, args.dotplot_threads)
+        # Integer weights: DotPloTree : PanGTree : KmerTree = 2:1:1.
+        trees.extend([dotmat_tree] * 2)
         save_tree(dotmat_tree, get_unique_filename(os.path.join(args.outdir, "dotplot_tree"), "newick"))
         save_distance_matrix(dotmat_dist, get_unique_filename(os.path.join(args.outdir, "dotplot_distmat"), "tsv"))
 
@@ -212,8 +210,6 @@ def main():
             print("Running pangenome binary method...")
             pang_tree_result, pang_dist = pang_tree(args.pang_csv, expected_samples=[s.id for s in sequences], expected_format=args.pang_format)
             trees.append(pang_tree_result)
-            if 'dotmat_tree' in locals() and dotmat_tree is not None:
-                trees.append(dotmat_tree)
             save_tree(pang_tree_result, get_unique_filename(os.path.join(args.outdir, "pang_tree"), "newick"))
             save_distance_matrix(pang_dist, get_unique_filename(os.path.join(args.outdir, "pang_distmat"), "tsv"))
         else:
@@ -224,17 +220,21 @@ def main():
         print("Running k-mer method...")
         kmer_result_tree, kmer_dist = kmer_tree(sequences)
         trees.append(kmer_result_tree)
-        if 'dotmat_tree' in locals() and dotmat_tree is not None:
-            trees.append(dotmat_tree)
-        if 'pang_tree_result' in locals() and pang_tree_result is not None:
-            trees.append(pang_tree_result)
         save_tree(kmer_result_tree, get_unique_filename(os.path.join(args.outdir, "kmer_tree"), "newick"))
         save_distance_matrix(kmer_dist, get_unique_filename(os.path.join(args.outdir, "kmer_distmat"), "tsv"))
 
     # CONSENSUS TREE
-    if len(trees) > 1:
+    # Repeated references encode weights, not additional methods.
+    if len({id(tree) for tree in trees}) > 1:
         print("Computing consensus tree...")
-        result_tree = majority_consensus(trees)
+        # Clades are counted by taxon identity. Bio.Phylo.Consensus builds its
+        # bitstrings from each tree's own terminal ordering, so the same set of
+        # plasmids is counted as different clades in trees of different shape,
+        # which understates the agreement between the methods. The taxon order
+        # is taken from the input FASTA so that the result does not depend on
+        # which method happened to be run first.
+        result_tree = weighted_greedy_consensus(
+            trees, taxon_order=[s.id for s in sequences])
         save_tree(result_tree, get_unique_filename(os.path.join(args.outdir, "consensus_tree"), "newick"))
         print("Consensus tree:")
     else:

@@ -151,13 +151,21 @@ def kmer_tree(sequences):
     names = [s.id for s in sequences]
     n = len(names)
 
-    # Compute distance matrices for k from 3 to 8 and normalize them
+    # Compute distance matrices for k from 3 to 8 and put them on a common
+    # scale before averaging, so that large k do not dominate simply because
+    # their vectors are longer.
     for k in range(3, 9):
         print(f"K-mer progress: starting k={k}", flush=True)
         dm = distance_matrix(sequences, k)
         full_matrix = distance_matrix_to_full(dm)
-        max_val = np.max(full_matrix)
-        normalized = full_matrix / max_val if max_val != 0 else full_matrix
+        # Divide by the largest distance the vectors can attain, not by the
+        # largest one observed. Rank values lie in (0, 1] and the vector has
+        # 4**k entries, so that bound is sqrt(4**k) = 2**k, which depends only
+        # on k. Dividing by the observed maximum made every distance relative
+        # to whatever else happened to be in the input file, so the same pair
+        # of plasmids scored differently in different runs and a branch-length
+        # threshold had no fixed meaning across analyses.
+        normalized = full_matrix / (2 ** k)
         normalized_matrices.append(normalized)
         print(f"K-mer progress: finished k={k}", flush=True)
 

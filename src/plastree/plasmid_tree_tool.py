@@ -106,7 +106,7 @@ def largest_distant_nodes_with_table(tree, max_branches_in_cluster=None, max_bra
     if max_branches_in_cluster is None:
         max_branches_in_cluster = total_branches // 2
 
-    sorted_clusters = sorted(branches_t1, key=len, reverse=True)
+    sorted_clusters = sorted(branches_t1, key=lambda b: (-len(b), b))
     selected_clusters = []
     selected_branches = set()
     cluster_to_branch_map = {}
@@ -162,7 +162,9 @@ def main():
         parser.error("Unsupported value for --dotplot_threads. Use an integer >= 1.")
 
     os.makedirs(args.outdir, exist_ok=True)
-    sequences = get_sequences(args.fasta)
+    # Sort by identifier so that the result does not depend on the order of the input file
+    # (UPGMA resolves tied distances by matrix order).
+    sequences = sorted(get_sequences(args.fasta), key=lambda s: s.id)
     trees = []
 
     def color_cluster_tree(tree, common_clusters, filename_suffix=None):

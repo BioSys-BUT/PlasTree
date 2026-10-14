@@ -17,6 +17,7 @@ PlasTree integrates three complementary similarity methods, DotPloTree (pairwise
   - [Parameters](#parameters)
   - [Example](#example)
   - [Output](#output)
+- [Changes in 0.2.1](#changes-in-021)
 - [Changes in 0.2.0](#changes-in-020)
 - [Generating pangenome input (Bakta + Roary/Panaroo)](#generating-pangenome-input-bakta--roarypanaroo)
 - [License](#license)
@@ -137,6 +138,10 @@ All output files are written to `--outdir`.
 | `cluster_tree.png` | consensus tree rendered with clusters color-coded (only with `--result_tree_png`) |
 
 If multiple `--max_branch_length` values are given, `plasmid_clusters.tsv` and `cluster_tree.png` are produced once per threshold, suffixed with the value (dots replaced by underscores), e.g. `plasmid_clusters_bl0_2.tsv` and `cluster_tree_0_2.png` for threshold `0.2`.
+
+## Changes in 0.2.1
+
+The sequences are sorted by identifier after the FASTA file is read, and clades of equal size are ordered by their members, so the clusters and their numbering no longer depend on the order of the sequences in the input file (UPGMA resolves tied distances by the order of the matrix). The results for the example data and for the datasets of the manuscript are unchanged.
 
 ## Changes in 0.2.0
 
